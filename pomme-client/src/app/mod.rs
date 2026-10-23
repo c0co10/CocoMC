@@ -280,6 +280,59 @@ impl App {
         self.phase.get().world_has_pointer()
     }
 
+    /// winit reports iOS's `applicationDidEnterBackground` as occlusion. iOS
+    /// suspends a backgrounded app within seconds and may end it later without
+    /// warning, while the integrated server writes the world only when it
+    /// stops. So leaving the screen saves and closes a singleplayer world, as
+    /// Save and Quit to Title does, under a background task's extra time.
+    #[cfg(target_os = "ios")]
+    fn ios_background_changed(&mut self, backgrounded: bool) {
+        if !backgrounded {
+            crate::ios_background::end();
+            return;
+        }
+        let in_world = matches!(
+            self.phase.get(),
+            AppPhase::Connecting { world: Some(_), .. }
+                | AppPhase::InGame { world: Some(_), .. }
+                | AppPhase::SavingWorld { .. }
+        );
+        if !in_world {
+            return;
+        }
+        crate::ios_background::begin();
+        self.phase.transition(|app| match app {
+            AppPhase::Connecting {
+                gfx,
+                panorama,
+                connection,
+                world: world @ Some(_),
+                ..
+            } => leave_world(
+                &mut self.core,
+                gfx,
+                panorama,
+                connection,
+                world,
+                AfterSaving::Menu,
+            ),
+            AppPhase::InGame {
+                gfx,
+                connection,
+                world: world @ Some(_),
+                ..
+            } => leave_world(
+                &mut self.core,
+                gfx,
+                Panorama::new(),
+                connection,
+                world,
+                AfterSaving::Menu,
+            ),
+            app => app,
+        });
+    }
+
     /// The effective framerate cap, or `None` for uncapped, matching vanilla
     /// `FramerateLimitTracker`: occluded/iconified → 10, the title/menu (no
     /// world) → 60, otherwise the Max Framerate setting (uncapped at its top).
@@ -840,6 +893,8 @@ impl ApplicationHandler for App {
 
             WindowEvent::Occluded(occluded) => {
                 self.occluded = occluded;
+                #[cfg(target_os = "ios")]
+                self.ios_background_changed(occluded);
             }
 
             WindowEvent::Focused(focused) => {

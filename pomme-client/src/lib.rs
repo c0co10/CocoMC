@@ -19,6 +19,8 @@ mod discord;
 mod entity;
 #[cfg(feature = "test-harness")]
 mod harness;
+#[cfg(target_os = "ios")]
+mod ios_background;
 mod lang;
 mod logging;
 mod mob_effect;

@@ -6,5 +6,8 @@ edition = "2024"
 license = "GPL-3.0-or-later"
 publish = false
 
+# Singleplayer stays on: the integrated server runs in-process over a memory
+# pipe, which iOS allows. The app saves and closes a world when it leaves the
+# screen (see `App::ios_background_changed`), since iOS may end it afterwards.
 [target.'cfg(target_os = "ios")'.dependencies]
-pomme-client = { path = "../pomme-client", default-features = false }
+pomme-client = { path = "../pomme-client", default-features = false, features = ["singleplayer"] }

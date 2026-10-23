@@ -110,6 +110,8 @@ raw-window-metal = "1.1"
 objc2 = "0.6"
 objc2-foundation = "0.3"
 objc2-ui-kit = "0.3"
+# The expiration handler for the background task a closing world saves under.
+block2 = "0.6"
 
 [target.'cfg(target_os = "android")'.dependencies]
 pomme-auth = { path = "../pomme-auth" }

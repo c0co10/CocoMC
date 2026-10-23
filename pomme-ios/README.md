@@ -64,10 +64,23 @@ The Android ones: drag on the left to move, drag elsewhere to look, tap to use
 or place, hold still to break; buttons for jump, chat, inventory and pause.
 There's no Back key, so the pause button is the way out of the world.
 
+## Singleplayer
+
+The integrated server (SteelMC) runs inside the app and talks to the client
+over the same in-memory pipe as on desktop, so it needs no network access or
+local network permission.
+Saves live in the profile's `saves` folder in the app's Application Support
+directory.
+
+iOS suspends a backgrounded app within seconds and may end it later without
+warning, while the server only writes a world when it stops. So sending the
+app to the background saves and closes an open world, like Save and Quit to
+Title, under a UIKit background task that buys it time to finish; coming
+back lands on the menu.
+
 ## Limitations
 
 - The simulator builds and starts but can't render: its GPU has no
   `drawIndirectFirstInstance`, which the chunk renderer needs. Use a device.
-- No singleplayer: the embedded server is off, as on Android.
 - The HUD ignores the safe area, so the notch and rounded corners can cover
   its edges.
