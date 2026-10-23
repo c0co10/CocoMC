@@ -1,6 +1,6 @@
 > [!NOTE]
-> **Fork von [PommeMC/Client](https://github.com/PommeMC/Client) mit Einzelspieler auf iOS.**
-> In der iOS-App ist hier der eingebettete SteelMC-Server eingeschaltet, sodass du auf iPhone und iPad eigene Welten spielen kannst. Wechselt die App in den Hintergrund, speichert sie die offene Welt und schließt sie. Der Workflow [iOS-IPA bauen](https://github.com/c0co10/Client/actions/workflows/ios-ipa.yml) baut bei jedem Push auf `master` eine neue IPA, du findest sie unter [Releases](https://github.com/c0co10/Client/releases). Mehr dazu in [pomme-ios/README.md](pomme-ios/README.md).
+> **Fork of [PommeMC/Client](https://github.com/PommeMC/Client) with singleplayer on iOS.**
+> The iOS app enables the embedded SteelMC server here, so you can play your own worlds on iPhone and iPad. When the app goes into the background, it saves the open world and closes it. The [Build iOS IPA](https://github.com/c0co10/Client/actions/workflows/ios-ipa.yml) workflow builds a new IPA on every push to `master`; you can find it under [Releases](https://github.com/c0co10/Client/releases). For more information, see [pomme-ios/README.md](pomme-ios/README.md).
 
 <p align="center">
   <h1 align="center">Pomme</h1>
@@ -112,7 +112,7 @@ Minecraft is a trademark of Mojang Studios.
 <a href="https://www.star-history.com/?repos=PommeMC%2FClient&type=date&logscale=&legend=top-left">
  <picture>
    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=PommeMC/Client&type=date&theme=dark&logscale&legend=top-left&sealed_token=r7ib_n7xrIE4aUaRqlz9KCFjr5-Cpocxw6LPtk06-CcFfxLAEjzgPfz5bSzzGcSnbhRnkbN6KwRem4jwXnRJzcsuZYIZX5tyIAmYKFIc60c_2HBXRhGHA4rlvmyr2MXfeZDe2thqz-maf8Tdh5FxHAWJUFflGQP1JjoIfbyUZ0GW6pMxxJ8qfga5eta0" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=PommeMC/Client&type=date&logscale&legend=top-left&sealed_token=r7ib_n7xrIE4aUaRqlz9KCFjr5-Cpocxw6LPtk06-CcFfxLAEjzgPfz5bSzzGcSnbhRnkbN6KwRem4jwXnRJzcsuZYIZX5tyIAmYKFIc60c_2HBXRhGHA4rlvmyr2MXfeZDe2thqz-maf8Tdh5FxHAWJUFflGQP1JjoIfbyUZ0GW6pMxxJ8qfga5eta0" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=PommeMC/Client&type=date&theme=light&logscale&legend=top-left&sealed_token=r7ib_n7xrIE4aUaRqlz9KCFjr5-Cpocxw6LPtk06-CcFfxLAEjzgPfz5bSzzGcSnbhRnkbN6KwRem4jwXnRJzcsuZYIZX5tyIAmYKFIc60c_2HBXRhGHA4rlvmyr2MXfeZDe2thqz-maf8Tdh5FxHAWJUFflGQP1JjoIfbyUZ0GW6pMxxJ8qfga5eta0" />
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=PommeMC/Client&type=date&logscale&legend=top-left&sealed_token=r7ib_n7xrIE4aUaRqlz9KCFjr5-Cpocxw6LPtk06-CcFfxLAEjzgPfz5bSzzGcSnbhRnkbN6KwRem4jwXnRJzcsuZYIZX5tyIAmYKFIc60c_2HBXRhGHA4rlvmyr2MXfeZDe2thqz-maf8Tdh5FxHAWJUFflGQP1JjoIfbyUZ0GW6pMxxJ8qfga5eta0" />
  </picture>
 </a>
