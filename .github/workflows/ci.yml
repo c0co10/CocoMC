@@ -103,6 +103,12 @@ jobs:
           path: target/moltenvk
           key: moltenvk-${{ hashFiles('tools/fetch_moltenvk.py') }}
 
+      # steel-worldgen's build script reads the Minecraft data that
+      # steel-utils' build script downloads, without depending on it, so on a
+      # cold cache steel-utils has to go first.
+      - name: Fetch SteelMC's Minecraft data
+        run: cargo check -p steel-utils --target aarch64-apple-ios
+
       # shaderc is built for the runner against the SDK; the iOS build links
       # MoltenVK as its Vulkan.
       - name: Clippy
@@ -193,6 +199,12 @@ jobs:
             third_party/SteelMC/steel-utils/build_assets
             third_party/SteelMC/steel-worldgen/src/generated
           key: steel-generated-${{ steps.steel.outputs.rev }}
+
+      # steel-worldgen's build script reads the Minecraft data that
+      # steel-utils' build script downloads, without depending on it, so on a
+      # cold cache steel-utils has to go first.
+      - name: Fetch SteelMC's Minecraft data
+        run: cargo check -p steel-utils --release
 
       - run: just ci-singleplayer
 
