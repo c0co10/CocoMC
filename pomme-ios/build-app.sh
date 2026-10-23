@@ -31,7 +31,19 @@ if [ -n "${VULKAN_SDK:-}" ]; then
 fi
 VULKAN_SDK="$(python3 tools/fetch_moltenvk.py "$platform")"
 export VULKAN_SDK
-cargo build -p pomme-ios --target "$triple" ${release:+"$release"}
+# Host-built C code (SteelMC's build-time downloads pull in aws-lc-sys) needs
+# the Mac's SDK, which Xcode's script environment has no default for. cc and
+# rustc ignore an SDKROOT naming another platform and find the iOS SDK for
+# the target themselves.
+host_sdk="$(xcrun --sdk macosx --show-sdk-path)"
+cargo_build() {
+    SDKROOT="$host_sdk" cargo build --target "$triple" ${release:+"$release"} "$@"
+}
+# steel-worldgen's build script reads the Minecraft data that steel-utils'
+# build script downloads, without depending on it, so on a fresh checkout it
+# can run first and fail. steel-utils goes first.
+cargo_build -p steel-utils
+cargo_build -p pomme-ios
 mkdir -p "$app" "$frameworks"
 # Copied only when it changed, so an unchanged build isn't re-signed.
 if ! cmp -s "target/$triple/$profile/pomme-ios" "$app/$EXECUTABLE_NAME"; then
