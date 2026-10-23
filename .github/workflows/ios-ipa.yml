@@ -179,7 +179,7 @@ jobs:
           Der SteelMC-Server läuft direkt in der App. Wechselt die App in den Hintergrund, speichert sie die offene Welt und schließt sie, denn iOS darf Apps im Hintergrund jederzeit beenden. Danach landest du im Menü.
 
           **Installieren**
-          - iOS 14.0 bis 16.6.1, 16.7 RC oder 17.0: IPA mit TrollStore öffnen (dauerhaft).
+          - iOS 16.0 bis 16.6.1, 16.7 RC oder 17.0: IPA mit TrollStore öffnen (dauerhaft).
           - Neuere iOS-Versionen: mit Sideloadly, AltStore oder SideStore und deiner Apple-ID installieren (7 Tage gültig, danach erneuern). Vorher den Entwicklermodus einschalten: Einstellungen → Datenschutz & Sicherheit → Entwicklermodus.
 
           **Erster Start**
