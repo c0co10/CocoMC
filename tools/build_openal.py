@@ -116,7 +116,10 @@ def build(source, tag, platform):
         ],
         check=True,
     )
-    subprocess.run([cmake, "--build", build_dir, "--parallel"], check=True)
+    # A bare --parallel is an unbounded `make -j` under the default Makefile
+    # generator, which swamps small machines such as CI runners.
+    jobs = str(os.cpu_count() or 2)
+    subprocess.run([cmake, "--build", build_dir, "--parallel", jobs], check=True)
     built = build_dir / PRODUCTS[platform]
     if platform in IOS_SDKS:
         # App Store validation wants every embedded framework to say which

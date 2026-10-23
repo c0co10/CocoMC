@@ -25,6 +25,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 MANIFEST = REPO_ROOT / "pomme-client" / "third-party" / "openal-natives.txt"
 CACHE_DIR = REPO_ROOT / "target" / "openal-natives"
 BASE_URL = "https://libraries.minecraft.net/org/lwjgl/lwjgl-openal"
+# Per blocking read, not for the whole download.
+DOWNLOAD_TIMEOUT_SECS = 60
 
 
 class Unreachable(Exception):
@@ -91,9 +93,11 @@ def download_verified(url, expected_sha256, cached):
     if cached.is_file() and sha256(cached.read_bytes()) == expected_sha256:
         return cached
 
-    print(f"downloading {url}")
+    # stderr: build-app.sh reads fetch_moltenvk.py's stdout as a path.
+    print(f"downloading {url}", file=sys.stderr)
     try:
-        with urllib.request.urlopen(url) as response:
+        # A stalled connection would otherwise hang the build forever.
+        with urllib.request.urlopen(url, timeout=DOWNLOAD_TIMEOUT_SECS) as response:
             payload = response.read()
     except OSError as e:
         # An offline build should still compile and run, just without sound.
