@@ -1,0 +1,200 @@
+# Baut aus diesem Fork eine installierbare IPA für iPhone und iPad, mit
+# Einzelspieler (eingebetteter SteelMC-Server).
+#
+# Die App wird ohne Apple-Zertifikat gebaut und nur ad-hoc signiert:
+# TrollStore installiert sie direkt, Sideloadly, AltStore und SideStore
+# signieren sie beim Installieren mit deiner Apple-ID neu.
+
+name: iOS-IPA bauen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master]
+    paths-ignore:
+      - "**.md"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ios-ipa
+  cancel-in-progress: true
+
+jobs:
+  ipa:
+    name: Pomme.ipa
+    runs-on: macos-latest
+    timeout-minutes: 90
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+    steps:
+      - name: Quellcode holen
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Commit und Rust-Version bestimmen
+        id: src
+        run: |
+          set -euo pipefail
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+          echo "date=$(git log -1 --format=%cs)" >> "$GITHUB_OUTPUT"
+          # Die Nightly-Version aus rust-toolchain.toml, ohne deren Extras.
+          channel="$(sed -nE 's/^channel *= *"([^"]+)".*/\1/p' rust-toolchain.toml)"
+          test -n "$channel"
+          echo "RUSTUP_TOOLCHAIN=$channel" >> "$GITHUB_ENV"
+
+      - name: Rust-Toolchain mit iOS-Ziel installieren
+        timeout-minutes: 10
+        run: |
+          rustup toolchain install "$RUSTUP_TOOLCHAIN" --profile minimal --target aarch64-apple-ios
+          rustc -vV
+
+      - name: Cargo-Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: ios-ipa
+          cache-on-failure: true
+
+      # Liefert den Shader-Compiler (shaderc) für den Build auf dem Mac; als
+      # Vulkan-Treiber der App dient MoltenVK.
+      - name: Vulkan SDK installieren
+        uses: jakoch/install-vulkan-sdk-action@37effcfa045411f8bfbbda26df2fd1b3bf3436fa
+        with:
+          vulkan_version: 1.4.341.0
+          install_runtime: false
+          cache: true
+          stripdown: true
+
+      - name: MoltenVK und OpenAL zwischenspeichern
+        uses: actions/cache@v6
+        with:
+          path: |
+            target/moltenvk
+            target/openal-soft
+          key: ios-natives-${{ hashFiles('tools/fetch_moltenvk.py', 'tools/fetch_openal.py', 'tools/build_openal.py', 'pomme-client/third-party/openal-natives.txt') }}
+
+      - name: XcodeGen installieren
+        timeout-minutes: 10
+        run: brew install xcodegen
+
+      # Dasselbe erledigt pomme-ios/build-app.sh im Xcode-Build; vorab
+      # ausgeführt landen Fehler hier mit lesbarem Protokoll.
+      - name: MoltenVK und OpenAL vorbereiten
+        timeout-minutes: 15
+        run: |
+          set -euo pipefail
+          sdk="$(python3 tools/fetch_moltenvk.py ios)"
+          test -f "$sdk/lib/libvulkan.a"
+          python3 tools/build_openal.py ios "$RUNNER_TEMP/openal-check"
+          ls -la "$RUNNER_TEMP/openal-check"
+
+      - name: Xcode-Projekt erzeugen
+        working-directory: pomme-ios
+        run: |
+          xcodegen generate --quiet
+          xcodebuild -version
+
+      - name: App bauen (Release, ohne Signatur)
+        timeout-minutes: 60
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project pomme-ios/Pomme.xcodeproj \
+            -scheme Pomme \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath target/ios-build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            build
+
+      - name: IPA packen
+        id: ipa
+        env:
+          SHORT: ${{ steps.src.outputs.short }}
+        run: |
+          set -euo pipefail
+          app="target/ios-build/Build/Products/Release-iphoneos/Pomme.app"
+          test -f "$app/Pomme"
+          file "$app/Pomme"
+          xcrun vtool -show-build "$app/Pomme" || true
+          ls -la "$app" "$app/Frameworks" || true
+
+          # Macht den Documents-Ordner der App in der Dateien-App sichtbar,
+          # damit sich launch.txt ohne Mac anlegen lässt.
+          plist="$app/Info.plist"
+          for key in UIFileSharingEnabled LSSupportsOpeningDocumentsInPlace; do
+            /usr/libexec/PlistBuddy -c "Add :$key bool true" "$plist" 2>/dev/null \
+              || /usr/libexec/PlistBuddy -c "Set :$key true" "$plist"
+          done
+
+          # Ad-hoc-Signatur: TrollStore akzeptiert sie, Sideloadly, AltStore
+          # und SideStore ersetzen sie beim Installieren durch deine eigene.
+          if [ -d "$app/Frameworks" ]; then
+            find "$app/Frameworks" -maxdepth 1 -name '*.framework' \
+              -exec codesign --force --sign - --timestamp=none {} \;
+          fi
+          codesign --force --sign - --timestamp=none "$app"
+          codesign --verify --verbose=2 "$app"
+
+          name="Pomme-iOS-Einzelspieler-${SHORT}.ipa"
+          mkdir -p dist/Payload
+          cp -R "$app" dist/Payload/
+          (cd dist && zip -qry "$name" Payload)
+          ls -lh "dist/$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "path=dist/$name" >> "$GITHUB_OUTPUT"
+
+      - name: Als Artefakt hochladen
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.ipa.outputs.name }}
+          path: ${{ steps.ipa.outputs.path }}
+          retention-days: 7
+          compression-level: 0
+
+      - name: Release mit der IPA anlegen
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.src.outputs.sha }}
+          SHORT: ${{ steps.src.outputs.short }}
+          DATE: ${{ steps.src.outputs.date }}
+          IPA: ${{ steps.ipa.outputs.path }}
+        run: |
+          set -euo pipefail
+          tag="ios-${SHORT}-${GITHUB_RUN_NUMBER}"
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Pomme für iPhone und iPad mit Einzelspieler, gebaut aus [${SHORT}](https://github.com/${GITHUB_REPOSITORY}/commit/${SHA}) vom ${DATE}.
+
+          **Einzelspieler**
+          Der SteelMC-Server läuft direkt in der App. Wechselt die App in den Hintergrund, speichert sie die offene Welt und schließt sie, denn iOS darf Apps im Hintergrund jederzeit beenden. Danach landest du im Menü.
+
+          **Installieren**
+          - iOS 14.0 bis 16.6.1, 16.7 RC oder 17.0: IPA mit TrollStore öffnen (dauerhaft).
+          - Neuere iOS-Versionen: mit Sideloadly, AltStore oder SideStore und deiner Apple-ID installieren (7 Tage gültig, danach erneuern). Vorher den Entwicklermodus einschalten: Einstellungen → Datenschutz & Sicherheit → Entwicklermodus.
+
+          **Erster Start**
+          Anmeldung mit dem Microsoft-Konto über microsoft.com/link (Minecraft: Java Edition nötig). Danach lädt die App die Spieldateien herunter, etwa 500 MB.
+
+          Pomme steht unter der GPL-3.0, der eingebettete Server SteelMC unter der AGPL-3.0. Den Quellcode zu diesem Build findest du im verlinkten Commit.
+          EOF
+          gh release create "$tag" "$IPA" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$SHA" \
+            --title "Pomme iOS mit Einzelspieler ${SHORT} (${DATE})" \
+            --notes-file "$RUNNER_TEMP/notes.md" \
+            --latest
+          {
+            echo "### Pomme iOS mit Einzelspieler ${SHORT}"
+            echo ""
+            echo "IPA: https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag}"
+          } >> "$GITHUB_STEP_SUMMARY"

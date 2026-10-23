@@ -1,3 +1,7 @@
+> [!NOTE]
+> **Fork von [PommeMC/Client](https://github.com/PommeMC/Client) mit Einzelspieler auf iOS.**
+> In der iOS-App ist hier der eingebettete SteelMC-Server eingeschaltet, sodass du auf iPhone und iPad eigene Welten spielen kannst. Wechselt die App in den Hintergrund, speichert sie die offene Welt und schließt sie. Der Workflow [iOS-IPA bauen](https://github.com/c0co10/Client/actions/workflows/ios-ipa.yml) baut bei jedem Push auf `master` eine neue IPA, du findest sie unter [Releases](https://github.com/c0co10/Client/releases). Mehr dazu in [pomme-ios/README.md](pomme-ios/README.md).
+
 <p align="center">
   <h1 align="center">Pomme</h1>
   <p align="center">A high-performance Minecraft: Java Edition client, written from scratch in Rust and Vulkan</p>
